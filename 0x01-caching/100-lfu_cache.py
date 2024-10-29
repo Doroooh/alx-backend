@@ -1,48 +1,100 @@
 #!/usr/bin/python3
-""" LFU Caching System """
+"""
+    BaseCache module
+"""
+
 from base_caching import BaseCaching
-from collections import OrderedDict
 
 
-class LFUCacheSystem(BaseCaching):
-    """ LFU Cache that inherits from BaseCaching """
-    
+class LFUCache(BaseCaching):
+    """ LRUCache defining a LRU algorithm to use cache
+
+      To use:
+      >>> my_cache = BasicCache()
+      >>> my_cache.print_cache()
+      Current cache:
+
+      >>> my_cache.put("A", "Hello")
+      >>> my_cache.print_cache()
+      A: Hello
+
+      Ex:
+      >>> my_cache.print_cache()
+      Current cache:
+      A: Hello
+      B: World
+      C: Holberton
+      D: School
+      >>> print(my_cache.get("B"))
+      World
+      >>> my_cache.put("E", "Battery")
+      DISCARD: A
+      >>> my_cache.print_cache()
+      Current cache:
+      B: World
+      C: Holberton
+      D: School
+      E: Battery
+    """
+
     def __init__(self):
+        """ Initiliazing
+        """
         super().__init__()
-        self.access_order = OrderedDict()
-        self.frequency_count = {}
+        self.leastrecent = []
 
     def put(self, key, item):
-        """ Store item using LFU caching rules """
-        if not key or not item:
-            return
+        """
+            modifying the cache data
 
-        if key in self.access_order:
-            del self.access_order[key]
+            Args:
+                key: of the dict
+                item: key value
+        """
+        if key or item is not None:
+            valuecache = self.get(key)
+            # Making new
+            if valuecache is None:
+                if len(self.cache_data) >= BaseCaching.MAX_ITEMS:
+                    keydel = self.leastrecent
+                    lendel = len(keydel) - 1
+                    del self.cache_data[keydel[lendel]]
+                    print("DISCARD: {}".format(self.leastrecent.pop()))
+            else:
+                del self.cache_data[key]
 
-        if len(self.access_order) >= BaseCaching.MAX_ITEMS:
-            min_freq = min(self.frequency_count.values())
-            least_frequent_keys = [k for k, v in self.frequency_count.items() if v == min_freq]
-            
-            # If more than one key with minimum frequency, use FIFO rule among them
-            for old_key in list(self.access_order):
-                if old_key in least_frequent_keys:
-                    print("DISCARD:", old_key)
-                    del self.access_order[old_key]
-                    del self.frequency_count[old_key]
-                    break
+            if key in self.leastrecent:
+                idxtodel = self.search_first(self.leastrecent, key)
+                self.leastrecent.pop(idxtodel)
+                self.leastrecent.insert(0, key)
+            else:
+                self.leastrecent.insert(0, key)
 
-        # Insert new key and update frequency
-        self.access_order[key] = item
-        self.access_order.move_to_end(key)
-        self.frequency_count[key] = self.frequency_count.get(key, 0) + 1
-        self.cache_data = dict(self.access_order)
+            self.cache_data[key] = item
 
     def get(self, key):
-        """ Retrieve item and update frequency """
-        if key in self.access_order:
-            item = self.access_order[key]
-            self.access_order.move_to_end(key)
-            self.frequency_count[key] = self.frequency_count.get(key, 0) + 1
-            return item
+        """
+            modifying cache data
+
+            Args:
+                key: of the dict
+
+            Return:
+                value of the key
+        """
+        valuecache = self.cache_data.get(key)
+
+        if valuecache:
+            idxtodel = self.search_first(self.leastrecent, key)
+            self.leastrecent.pop(idxtodel)
+            self.leastrecent.insert(0, key)
+
+        return valuecache
+
+    @staticmethod
+    def search_first(mrulist, key):
+        for k in range(0, len(mrulist)):
+            if mrulist[k] == key:
+                return (k)
+
         return None
