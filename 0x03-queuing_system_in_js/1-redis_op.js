@@ -1,23 +1,38 @@
+// Import the Redis library to interact with the Redis database
 import redis from 'redis';
+
+// Create a Redis client instance to connect to the Redis server
 const client = redis.createClient();
 
+// Event listener triggered upon successful connection to the Redis server
 client.on('connect', function() {
-    console.log('Redis client connected to the server');
+    console.log('Successfully connected to the Redis server!'); // Notify the connection status
 });
 
+// Event listener to handle errors during the connection or interaction with the Redis server
 client.on('error', function(error) {
-  console.error(`Redis client not connected to the server: ${error.message}`);
+    console.error(`Error: Unable to connect to the Redis server. Details: ${error.message}`); // Log error details
 });
 
-function setNewSchool(schoolName, value) {  
-  client.set(schoolName, value, redis.print);
+// Function to set a key-value pair in the Redis store
+function setSchool(schoolName, value) {  
+    // Use the 'set' command to store a value, and print the operation's status
+    client.set(schoolName, value, redis.print); 
+    console.log(`Set operation complete for key: "${schoolName}" with value: "${value}"`);
 }
 
-function displaySchoolValue(schoolName) {
-  const foundValue = client.get(schoolName, redis.print);
-  console.log(foundValue);
+// Function to retrieve and display a value associated with a specific key
+function getSchoolValue(schoolName) {
+    client.get(schoolName, (err, value) => {
+        if (err) {
+            console.error(`Error retrieving key "${schoolName}": ${err.message}`);
+        } else {
+            console.log(`Value for key "${schoolName}": ${value}`); // Log the retrieved value
+        }
+    });
 }
 
-displaySchoolValue('Holberton');
-setNewSchool('HolbertonSanFrancisco', '100');
-displaySchoolValue('HolbertonSanFrancisco');
+// Example usage of the above functions
+getSchoolValue('Holberton'); // Attempt to retrieve value for 'Holberton'
+setSchool('HolbertonSanFrancisco', '100'); // Add a new key-value pair
+getSchoolValue('HolbertonSanFrancisco'); // Retrieve the newly set value
